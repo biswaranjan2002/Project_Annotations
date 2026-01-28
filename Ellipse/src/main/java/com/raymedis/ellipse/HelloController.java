@@ -1,9 +1,6 @@
 package com.raymedis.ellipse;
 
-import com.raymedis.ellipse.AnnotationsWrapper.EllipseAnnotation;
-import com.raymedis.ellipse.AnnotationsWrapper.LineAnnotation;
-import com.raymedis.ellipse.AnnotationsWrapper.PointAnnotation;
-import com.raymedis.ellipse.AnnotationsWrapper.RectangleAnnotation;
+import com.raymedis.ellipse.AnnotationsWrapper.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.canvas.Canvas;
@@ -30,6 +27,10 @@ public class HelloController implements Initializable {
 
     private final List<PointAnnotation> points = new ArrayList<>();
 
+    private final List<AngleAnnotation> angles = new ArrayList<>();
+
+    private final List<DistanceAnnotation> distances = new ArrayList<>();
+
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -39,6 +40,8 @@ public class HelloController implements Initializable {
         loadRectangles();
         loadLines();
         loadPoints();
+        loadAngles();
+        loadDistances();
         redrawCanvas();
     }
 
@@ -118,7 +121,30 @@ public class HelloController implements Initializable {
         points.add(p3);
     }
 
+    private void loadAngles() {
 
+        PointAnnotation vertex = new PointAnnotation(300, 300);
+        vertex.setRadius(6);
+        vertex.setFillColor("#FFFF00"); // yellow vertex
+
+        LineAnnotation l1 = new LineAnnotation(
+                vertex,
+                new PointAnnotation(400, 250)
+        );
+        l1.setStrokeColor("#FF0000");
+        l1.setStrokeWidth(2);
+
+        LineAnnotation l2 = new LineAnnotation(
+                vertex,
+                new PointAnnotation(350, 400)
+        );
+        l2.setStrokeColor("#0000FF");
+        l2.setStrokeWidth(2);
+
+        AngleAnnotation angle = new AngleAnnotation(vertex, l1, l2);
+
+        angles.add(angle);
+    }
 
     private void redrawCanvas() {
         gc.clearRect(9, 9, canvas.getWidth(), canvas.getHeight());
@@ -138,6 +164,13 @@ public class HelloController implements Initializable {
         for (LineAnnotation l : lines) {
             drawLine(gc, l);
         }
+
+        for (AngleAnnotation a : angles) {
+            drawAngle(gc, a);
+        }
+
+        for (DistanceAnnotation d : distances) drawDistance(gc, d);
+
     }
 
     private void drawEllipse(GraphicsContext gc, EllipseAnnotation e) {
@@ -188,6 +221,122 @@ public class HelloController implements Initializable {
                 line.getStartPoint().getY(),
                 line.getEndPoint().getX(),
                 line.getEndPoint().getY()
+        );
+    }
+
+    private void drawAngle(GraphicsContext gc, AngleAnnotation angle) {
+
+        // draw lines
+        drawLine(gc, angle.getFirstLine());
+        drawLine(gc, angle.getSecondLine());
+
+        // highlight points
+        drawHighlightedPoint(gc, angle.getVertex());
+        drawHighlightedPoint(gc, angle.getFirstLine().getEndPoint());
+        drawHighlightedPoint(gc, angle.getSecondLine().getEndPoint());
+    }
+
+    private void drawHighlightedPoint(GraphicsContext gc, PointAnnotation p) {
+
+        double r = p.getRadius();
+
+        gc.setFill(Color.YELLOW);
+        gc.fillOval(
+                p.getX() - r,
+                p.getY() - r,
+                r * 2,
+                r * 2
+        );
+
+        gc.setStroke(Color.BLUE);
+        gc.setLineWidth(1);
+        gc.strokeOval(
+                p.getX() - r,
+                p.getY() - r,
+                r * 2,
+                r * 2
+        );
+    }
+
+    private void loadDistances() {
+
+        DistanceAnnotation d1 = new DistanceAnnotation(
+                new PointAnnotation(100, 100),
+                new PointAnnotation(300, 150)
+        );
+
+        DistanceAnnotation d2 = new DistanceAnnotation(
+                new PointAnnotation(200, 250),
+                new PointAnnotation(450, 350)
+        );
+
+        distances.add(d1);
+        distances.add(d2);
+    }
+
+    private void drawDistance(GraphicsContext gc, DistanceAnnotation d) {
+
+        LineAnnotation line = createDistanceLine(d);
+        LabelAnnotation label = createDistanceLabel(d);
+
+        drawLine(gc, line);
+
+        drawHighlightedPoint(gc, d.getStartPoint());
+        drawHighlightedPoint(gc, d.getEndPoint());
+
+        drawLabel(gc, label);
+    }
+
+    private LabelAnnotation createDistanceLabel(DistanceAnnotation d) {
+
+        double midX =
+                (d.getStartPoint().getX() + d.getEndPoint().getX()) / 2.0;
+        double midY =
+                (d.getStartPoint().getY() + d.getEndPoint().getY()) / 2.0;
+
+        double distance = calculateDistance(d);
+
+        return new LabelAnnotation(
+                distance,
+                new PointAnnotation(midX, midY)
+        );
+    }
+
+    private LineAnnotation createDistanceLine(DistanceAnnotation d) {
+        LineAnnotation line =
+                new LineAnnotation(d.getStartPoint(), d.getEndPoint());
+
+        line.setStrokeWidth(2);
+        line.setStrokeColor("#00FFFF"); // example
+
+        return line;
+    }
+
+    private double calculateDistance(DistanceAnnotation d) {
+        double dx = d.getEndPoint().getX() - d.getStartPoint().getX();
+        double dy = d.getEndPoint().getY() - d.getStartPoint().getY();
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    private void drawLabel(GraphicsContext gc, LabelAnnotation label) {
+
+        if (label == null || label.getPosition() == null) {
+            return;
+        }
+
+        PointAnnotation pos = label.getPosition();
+
+        // text style
+        gc.setFill(Color.WHITE);
+        gc.setLineWidth(1);
+
+        // optional background for readability
+        String text = String.format("%.2f", label.getValue());
+
+        gc.fillText(
+                text,
+                pos.getX(),
+                pos.getY()
         );
     }
 
