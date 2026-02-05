@@ -11,8 +11,6 @@ public class PointAnnotation {
     private String fillColor;
 
     public PointAnnotation() {
-        this.radius = 3.0;
-        this.fillColor = "#00FF00";
     }
 
     public PointAnnotation(double x, double y) {
@@ -21,9 +19,11 @@ public class PointAnnotation {
         this.y = y;
     }
 
-    public PointAnnotation(double x, double y, double radius) {
-        this(x, y);
+    public PointAnnotation(double x, double y, double radius, String fillColor) {
+        this.x = x;
+        this.y = y;
         this.radius = radius;
+        this.fillColor = fillColor;
     }
 
 

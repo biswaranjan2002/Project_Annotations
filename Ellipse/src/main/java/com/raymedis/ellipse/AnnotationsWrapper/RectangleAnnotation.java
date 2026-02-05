@@ -12,31 +12,30 @@ public class RectangleAnnotation {
     private LineAnnotation bottomEdge;
     private LineAnnotation leftEdge;
 
+    public double strokeWidth;
+    public String color;
+
     public RectangleAnnotation(PointAnnotation topLeft,
                                PointAnnotation topRight,
                                PointAnnotation bottomRight,
-                               PointAnnotation bottomLeft) {
+                               PointAnnotation bottomLeft,
+                               double width,
+                               String color) {
         this.topLeft = topLeft;
         this.topRight = topRight;
         this.bottomRight = bottomRight;
         this.bottomLeft = bottomLeft;
+
+        this.strokeWidth = width;
+        this.color = color;
         buildEdges();
     }
 
-    public RectangleAnnotation(double x, double y, double width, double height) {
-        this(
-                new PointAnnotation(x, y),
-                new PointAnnotation(x + width, y),
-                new PointAnnotation(x + width, y + height),
-                new PointAnnotation(x, y + height)
-        );
-    }
-
     private void buildEdges() {
-        topEdge = new LineAnnotation(topLeft, topRight);
-        rightEdge = new LineAnnotation(topRight, bottomRight);
-        bottomEdge = new LineAnnotation(bottomRight, bottomLeft);
-        leftEdge = new LineAnnotation(bottomLeft, topLeft);
+        topEdge = new LineAnnotation(topLeft, topRight,strokeWidth,color);
+        rightEdge = new LineAnnotation(topRight, bottomRight,strokeWidth,color);
+        bottomEdge = new LineAnnotation(bottomRight, bottomLeft,strokeWidth,color);
+        leftEdge = new LineAnnotation(bottomLeft, topLeft,strokeWidth,color);
     }
 
 

@@ -8,26 +8,14 @@ public class LineAnnotation {
     private double strokeWidth;
     private String strokeColor;
 
-
     public LineAnnotation() {
-        this.strokeWidth = 1.0;
-        this.strokeColor = "#00FF00";
     }
 
-    public LineAnnotation(PointAnnotation startPoint, PointAnnotation endPoint) {
-        this();
+    public LineAnnotation(PointAnnotation startPoint, PointAnnotation endPoint, double strokeWidth, String strokeColor) {
         this.startPoint = startPoint;
         this.endPoint = endPoint;
-    }
-
-    public LineAnnotation(
-            double startX, double startY,
-            double endX, double endY
-    ) {
-        this(
-                new PointAnnotation(startX, startY),
-                new PointAnnotation(endX, endY)
-        );
+        this.strokeWidth = strokeWidth;
+        this.strokeColor = strokeColor;
     }
 
     public PointAnnotation getStartPoint() {

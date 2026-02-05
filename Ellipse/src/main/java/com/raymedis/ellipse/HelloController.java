@@ -23,10 +23,6 @@ public class HelloController implements Initializable {
 
     private final List<RectangleAnnotation> rectangles = new ArrayList<>();
 
-    private final List<LineAnnotation> lines = new ArrayList<>();
-
-    private final List<PointAnnotation> points = new ArrayList<>();
-
     private final List<AngleAnnotation> angles = new ArrayList<>();
 
     private final List<DistanceAnnotation> distances = new ArrayList<>();
@@ -37,10 +33,8 @@ public class HelloController implements Initializable {
         gc = canvas.getGraphicsContext2D();
 
         loadEllipses();
-        loadRectangles();
-        loadLines();
-        loadPoints();
         loadAngles();
+        loadRectangles();
         loadDistances();
         redrawCanvas();
     }
@@ -65,112 +59,25 @@ public class HelloController implements Initializable {
         ellipses.add(e2);
     }
 
-
-    private void loadRectangles() {
-
-        RectangleAnnotation r1 = new RectangleAnnotation(
-                100, 100,   // x, y
-                200, 120    // width, height
-        );
-
-        RectangleAnnotation r2 = new RectangleAnnotation(
-                350, 200,
-                150, 180
-        );
-
-        rectangles.add(r1);
-        rectangles.add(r2);
-    }
-
-    private void loadLines() {
-
-        LineAnnotation l1 = new LineAnnotation(
-                new PointAnnotation(50, 50),
-                new PointAnnotation(200, 80)
-        );
-        l1.setStrokeColor("#FF0000");
-        l1.setStrokeWidth(2);
-
-        LineAnnotation l2 = new LineAnnotation(
-                300, 150,
-                500, 300
-        );
-        l2.setStrokeColor("#0000FF");
-        l2.setStrokeWidth(3);
-
-        lines.add(l1);
-        lines.add(l2);
-    }
-
-    private void loadPoints() {
-
-        PointAnnotation p1 = new PointAnnotation(100, 100);
-        p1.setRadius(4);
-        p1.setFillColor("#FF0000");
-
-        PointAnnotation p2 = new PointAnnotation(250, 180);
-        p2.setRadius(6);
-        p2.setFillColor("#0000FF");
-
-        PointAnnotation p3 = new PointAnnotation(400, 300);
-        p3.setRadius(5);
-        p3.setFillColor("#00FF00");
-
-        points.add(p1);
-        points.add(p2);
-        points.add(p3);
-    }
-
-    private void loadAngles() {
-
-        PointAnnotation vertex = new PointAnnotation(300, 300);
-        vertex.setRadius(6);
-        vertex.setFillColor("#FFFF00"); // yellow vertex
-
-        LineAnnotation l1 = new LineAnnotation(
-                vertex,
-                new PointAnnotation(400, 250)
-        );
-        l1.setStrokeColor("#FF0000");
-        l1.setStrokeWidth(2);
-
-        LineAnnotation l2 = new LineAnnotation(
-                vertex,
-                new PointAnnotation(350, 400)
-        );
-        l2.setStrokeColor("#0000FF");
-        l2.setStrokeWidth(2);
-
-        AngleAnnotation angle = new AngleAnnotation(vertex, l1, l2);
-
-        angles.add(angle);
-    }
-
     private void redrawCanvas() {
         gc.clearRect(9, 9, canvas.getWidth(), canvas.getHeight());
 
-        for (PointAnnotation p : points) {
-            drawPoint(gc, p);
-        }
 
         for (EllipseAnnotation ellipse : ellipses) {
             drawEllipse(gc, ellipse);
+        }
+
+        for (AngleAnnotation angle : angles) {
+            drawAngle(gc, angle);
         }
 
         for (RectangleAnnotation r : rectangles) {
             drawRectangle(gc, r);
         }
 
-        for (LineAnnotation l : lines) {
-            drawLine(gc, l);
+        for (DistanceAnnotation d : distances) {
+            drawDistance(gc, d);
         }
-
-        for (AngleAnnotation a : angles) {
-            drawAngle(gc, a);
-        }
-
-        for (DistanceAnnotation d : distances) drawDistance(gc, d);
-
     }
 
     private void drawEllipse(GraphicsContext gc, EllipseAnnotation e) {
@@ -190,28 +97,180 @@ public class HelloController implements Initializable {
         }
     }
 
-    private void drawPoint(GraphicsContext gc, PointAnnotation p) {
+    private void loadAngles() {
+
+        // Center (vertex)
+        PointAnnotation center = new PointAnnotation(300, 300);
+        center.setRadius(6);
+        center.setFillColor("#FFFF00"); // yellow
+
+        // Left arm point
+        PointAnnotation left = new PointAnnotation(200, 300);
+        left.setRadius(4);
+        left.setFillColor("#FF0000"); // red
+
+        // Right arm point
+        PointAnnotation right = new PointAnnotation(350, 200);
+        right.setRadius(4);
+        right.setFillColor("#0000FF"); // blue
+
+        // Create angle annotation (auto-calculates angle)
+        AngleAnnotation angle = new AngleAnnotation(left, center, right);
+
+        angles.add(angle);
+    }
+
+
+    private void drawAngle(GraphicsContext gc, AngleAnnotation angle) {
+
+        // draw lines
+        drawAngleLine(gc, angle.getCenterVertex(), angle.getLeftVertex(),
+                angle.getLineStrokeWidth(), angle.getLineStrokeColor());
+
+        drawAngleLine(gc, angle.getCenterVertex(), angle.getRightVertex(),
+                angle.getLineStrokeWidth(), angle.getLineStrokeColor());
+
+        // draw points
+        drawHighlightedPoint(gc, angle.getCenterVertex());
+        drawHighlightedPoint(gc, angle.getLeftVertex());
+        drawHighlightedPoint(gc, angle.getRightVertex());
+
+        // 👇 THIS is the key line
+        drawAngleLabel(gc, angle.getLabel(), angle.getCenterVertex());
+    }
+
+
+    private void drawAngleLine(
+            GraphicsContext gc,
+            PointAnnotation from,
+            PointAnnotation to,
+            double width,
+            String color
+    ) {
+        gc.setStroke(Color.web(color));
+        gc.setLineWidth(width);
+        gc.strokeLine(
+                from.getX(),
+                from.getY(),
+                to.getX(),
+                to.getY()
+        );
+    }
+
+    private void drawAngleLabel(
+            GraphicsContext gc,
+            LabelAnnotation label,
+            PointAnnotation center
+    ) {
+        if (label == null) return;
+
+        // controller decides position
+        double offsetX = 20;
+        double offsetY = -20;
+
+        label.setPosition(
+                new PointAnnotation(
+                        center.getX() + offsetX,
+                        center.getY() + offsetY
+                )
+        );
+
+        drawLabel(gc, label);
+    }
+
+    private void drawLabel(GraphicsContext gc, LabelAnnotation label) {
+
+        if (label == null || label.getPosition() == null) return;
+
+        String text = String.format(
+                "%.2f %s",
+                label.getValue(),
+                label.getUnit()
+        );
+
+        gc.setFill(Color.WHITE);
+        gc.fillText(
+                text,
+                label.getPosition().getX(),
+                label.getPosition().getY()
+        );
+    }
+
+    private void drawHighlightedPoint(GraphicsContext gc, PointAnnotation p) {
+
+        if (p == null) return;
 
         double r = p.getRadius();
 
-        gc.setFill(Color.web(p.getFillColor()));
+        // fill (inside)
+        gc.setFill(Color.YELLOW);
         gc.fillOval(
                 p.getX() - r,
                 p.getY() - r,
                 r * 2,
                 r * 2
         );
+
+        // border (highlight)
+        gc.setStroke(Color.BLUE);
+        gc.setLineWidth(1);
+        gc.strokeOval(
+                p.getX() - r,
+                p.getY() - r,
+                r * 2,
+                r * 2
+        );
+    }
+    private void loadRectangles() {
+
+        // Rectangle 1 points
+        PointAnnotation tl1 = new PointAnnotation(100, 100);
+        PointAnnotation tr1 = new PointAnnotation(300, 100);
+        PointAnnotation br1 = new PointAnnotation(300, 220);
+        PointAnnotation bl1 = new PointAnnotation(100, 220);
+
+        RectangleAnnotation r1 = new RectangleAnnotation(
+                tl1,
+                tr1,
+                br1,
+                bl1,
+                2.0,            // stroke width
+                "#FF0000"       // color
+        );
+
+        // Rectangle 2 points
+        PointAnnotation tl2 = new PointAnnotation(350, 200);
+        PointAnnotation tr2 = new PointAnnotation(500, 200);
+        PointAnnotation br2 = new PointAnnotation(500, 380);
+        PointAnnotation bl2 = new PointAnnotation(350, 380);
+
+        RectangleAnnotation r2 = new RectangleAnnotation(
+                tl2,
+                tr2,
+                br2,
+                bl2,
+                3.0,            // stroke width
+                "#0000FF"       // color
+        );
+
+        rectangles.add(r1);
+        rectangles.add(r2);
     }
 
 
-    private void drawRectangle(GraphicsContext gc, RectangleAnnotation r) {
-        drawLine(gc, r.getTopEdge());
-        drawLine(gc, r.getRightEdge());
-        drawLine(gc, r.getBottomEdge());
-        drawLine(gc, r.getLeftEdge());
+    private void drawRectangle(GraphicsContext gc, RectangleAnnotation rect) {
+
+        if (rect == null) return;
+
+        drawLine(gc, rect.getTopEdge());
+        drawLine(gc, rect.getRightEdge());
+        drawLine(gc, rect.getBottomEdge());
+        drawLine(gc, rect.getLeftEdge());
     }
 
     private void drawLine(GraphicsContext gc, LineAnnotation line) {
+
+        if (line == null) return;
 
         gc.setStroke(Color.web(line.getStrokeColor()));
         gc.setLineWidth(line.getStrokeWidth());
@@ -224,120 +283,58 @@ public class HelloController implements Initializable {
         );
     }
 
-    private void drawAngle(GraphicsContext gc, AngleAnnotation angle) {
-
-        // draw lines
-        drawLine(gc, angle.getFirstLine());
-        drawLine(gc, angle.getSecondLine());
-
-        // highlight points
-        drawHighlightedPoint(gc, angle.getVertex());
-        drawHighlightedPoint(gc, angle.getFirstLine().getEndPoint());
-        drawHighlightedPoint(gc, angle.getSecondLine().getEndPoint());
-    }
-
-    private void drawHighlightedPoint(GraphicsContext gc, PointAnnotation p) {
-
-        double r = p.getRadius();
-
-        gc.setFill(Color.YELLOW);
-        gc.fillOval(
-                p.getX() - r,
-                p.getY() - r,
-                r * 2,
-                r * 2
-        );
-
-        gc.setStroke(Color.BLUE);
-        gc.setLineWidth(1);
-        gc.strokeOval(
-                p.getX() - r,
-                p.getY() - r,
-                r * 2,
-                r * 2
-        );
-    }
-
     private void loadDistances() {
 
-        DistanceAnnotation d1 = new DistanceAnnotation(
-                new PointAnnotation(100, 100),
-                new PointAnnotation(300, 150)
-        );
+        PointAnnotation p1 = new PointAnnotation(100, 400);
+        p1.setRadius(5);
 
-        DistanceAnnotation d2 = new DistanceAnnotation(
-                new PointAnnotation(200, 250),
-                new PointAnnotation(450, 350)
+        PointAnnotation p2 = new PointAnnotation(350, 450);
+        p2.setRadius(5);
+
+        DistanceAnnotation d1 = new DistanceAnnotation(
+                p1,
+                p2,
+                "#00FF00",   // line color
+                2.0,        // line width
+                5.0         // point radius
         );
 
         distances.add(d1);
-        distances.add(d2);
     }
 
     private void drawDistance(GraphicsContext gc, DistanceAnnotation d) {
 
-        LineAnnotation line = createDistanceLine(d);
-        LabelAnnotation label = createDistanceLabel(d);
+        if (d == null) return;
 
-        drawLine(gc, line);
+        // 1️⃣ draw distance line
+        drawLine(gc, d.getLine());
 
+        // 2️⃣ draw start & end points
         drawHighlightedPoint(gc, d.getStartPoint());
         drawHighlightedPoint(gc, d.getEndPoint());
+
+        // 3️⃣ draw label
+        drawDistanceLabel(gc, d);
+    }
+
+    private void drawDistanceLabel(GraphicsContext gc, DistanceAnnotation d) {
+
+        LabelAnnotation label = d.getDistanceLabel();
+        if (label == null) return;
+
+        PointAnnotation start = d.getStartPoint();
+        PointAnnotation end = d.getEndPoint();
+
+        // midpoint
+        double midX = (start.getX() + end.getX()) / 2.0;
+        double midY = (start.getY() + end.getY()) / 2.0;
+
+        label.setPosition(new PointAnnotation(midX, midY));
 
         drawLabel(gc, label);
     }
 
-    private LabelAnnotation createDistanceLabel(DistanceAnnotation d) {
 
-        double midX =
-                (d.getStartPoint().getX() + d.getEndPoint().getX()) / 2.0;
-        double midY =
-                (d.getStartPoint().getY() + d.getEndPoint().getY()) / 2.0;
 
-        double distance = calculateDistance(d);
-
-        return new LabelAnnotation(
-                distance,
-                new PointAnnotation(midX, midY)
-        );
-    }
-
-    private LineAnnotation createDistanceLine(DistanceAnnotation d) {
-        LineAnnotation line =
-                new LineAnnotation(d.getStartPoint(), d.getEndPoint());
-
-        line.setStrokeWidth(2);
-        line.setStrokeColor("#00FFFF"); // example
-
-        return line;
-    }
-
-    private double calculateDistance(DistanceAnnotation d) {
-        double dx = d.getEndPoint().getX() - d.getStartPoint().getX();
-        double dy = d.getEndPoint().getY() - d.getStartPoint().getY();
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    private void drawLabel(GraphicsContext gc, LabelAnnotation label) {
-
-        if (label == null || label.getPosition() == null) {
-            return;
-        }
-
-        PointAnnotation pos = label.getPosition();
-
-        // text style
-        gc.setFill(Color.WHITE);
-        gc.setLineWidth(1);
-
-        // optional background for readability
-        String text = String.format("%.2f", label.getValue());
-
-        gc.fillText(
-                text,
-                pos.getX(),
-                pos.getY()
-        );
-    }
 
 }
